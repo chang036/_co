@@ -14,5 +14,6 @@ CHIP Not {
 
     PARTS:
     // Put your code here:
+    // 將單一輸入 in 同時接到 Nand 閘的兩個輸入端 (a 與 b)
     Nand(a=in, b=in, out=out);
 }

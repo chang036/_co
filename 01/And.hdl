@@ -15,5 +15,9 @@ CHIP And {
 
     PARTS:
     // Put your code here:
-    
+    // 1. Get the NAND result of a and b
+    Nand(a=a, b=b, out=nandOut);
+
+    // 2. Invert the result using NAND as a NOT gate
+    Nand(a=nandOut, b=nandOut, out=out);
 }

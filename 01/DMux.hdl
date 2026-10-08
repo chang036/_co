@@ -15,4 +15,12 @@ CHIP DMux {
 
     PARTS:
     // Put your code here:
+    // 1. 將 sel 反相
+    Not(in=sel, out=notSel);
+
+    // 2. 當 sel == 0 時，a = in；當 sel == 1 時，a = 0
+    And(a=in, b=notSel, out=a);
+
+    // 3. 當 sel == 1 時，b = in；當 sel == 0 時，b = 0
+    And(a=in, b=sel, out=b);
 }

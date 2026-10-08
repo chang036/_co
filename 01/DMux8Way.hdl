@@ -17,4 +17,10 @@ CHIP DMux8Way {
 
     PARTS:
     // Put your code here:
+    // 1. 第一層分流：根據 sel[2] 決定走向 top (a~d) 或 bottom (e~h)
+    DMux(in=in, sel=sel[2], a=top, b=bottom);
+
+    // 2. 第二層分流：根據 sel[0..1] 精確選出最終的 8 個輸出端口之一
+    DMux4Way(in=top,    sel=sel[0..1], a=a, b=b, c=c, d=d);
+    DMux4Way(in=bottom, sel=sel[0..1], a=e, b=f, c=g, d=h);
 }

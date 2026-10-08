@@ -17,4 +17,10 @@ CHIP Mux4Way16 {
 
     PARTS:
     // Put your code here:
+    // 第一層：根據 sel[0] 決定 (a vs b) 以及 (c vs d)
+    Mux16(a=a, b=b, sel=sel[0], out=muxAB);
+    Mux16(a=c, b=d, sel=sel[0], out=muxCD);
+
+    // 第二層：根據 sel[1] 從上述兩個結果中選出最終 out
+    Mux16(a=muxAB, b=muxCD, sel=sel[1], out=out);
 }

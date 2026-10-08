@@ -14,4 +14,14 @@ CHIP Xor {
 
     PARTS:
     // Put your code here:
+    // 1. 取得 a 與 b 的反相訊號
+    Not(in=a, out=notA);
+    Not(in=b, out=notB);
+
+    // 2. 判斷兩種「不相同」的情況
+    And(a=a, b=notB, out=aAndNotB);
+    And(a=notA, b=b, out=notAAndB);
+
+    // 3. 將結果用 OR 組合輸出
+    Or(a=aAndNotB, b=notAAndB, out=out);
 }

@@ -14,4 +14,12 @@ CHIP FullAdder {
 
     PARTS:
     // Put you code here:
+    // 1. 先用第一個半加器計算 a + b 的結果
+    HalfAdder(a=a, b=b, sum=s1, carry=c1);
+
+    // 2. 再用第二個半加器將 (a + b 的和) 與進位輸入 c 相加，得到最終的 sum
+    HalfAdder(a=s1, b=c, sum=sum, carry=c2);
+
+    // 3. 只要兩個半加器中有任何一個產生進位，最終的 carry 即為 1
+    Or(a=c1, b=c2, out=carry);
 }

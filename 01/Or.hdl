@@ -15,4 +15,10 @@ CHIP Or {
 
     PARTS:
     // Put your code here:
+    // 1. 反轉輸入 a 與 b
+    Not(in=a, out=notA);
+    Not(in=b, out=notB);
+
+    // 2. 將反轉後的訊號輸入至 Nand 閘
+    Nand(a=notA, b=notB, out=out);
 }

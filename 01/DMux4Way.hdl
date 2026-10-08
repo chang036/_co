@@ -17,4 +17,10 @@ CHIP DMux4Way {
 
     PARTS:
     // Put your code here:
+    // 1. 第一層分流：根據 sel[1] 決定走向 top (對應 a/b) 或 bottom (對應 c/d)
+    DMux(in=in, sel=sel[1], a=top, b=bottom);
+
+    // 2. 第二層分流：根據 sel[0] 決定具體的輸出端口
+    DMux(in=top, sel=sel[0], a=a, b=b);
+    DMux(in=bottom, sel=sel[0], a=c, b=d);
 }

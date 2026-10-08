@@ -15,4 +15,15 @@ CHIP Mux {
 
     PARTS:
     // Put your code here:
+    // 1. 反轉 sel 訊號，用於選擇 input a
+    Not(in=sel, out=notSel);
+
+    // 2. 當 sel == 0 時 (notSel == 1)，選擇 a 的值
+    And(a=a, b=notSel, out=aAndNotSel);
+
+    // 3. 當 sel == 1 時，選擇 b 的值
+    And(a=b, b=sel, out=bAndSel);
+
+    // 4. 將兩種情況的結果透過 OR Gate 組合輸出
+    Or(a=aAndNotSel, b=bAndSel, out=out);
 }
