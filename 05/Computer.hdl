@@ -20,4 +20,21 @@ CHIP Computer {
 
     PARTS:
     // Put your code here:
+    // 1. 依據 CPU 產生的 PC 位址，從 ROM 中讀取組語指令
+    ROM32K(address=pc, out=instruction);
+
+    // 2. CPU 負責執行指令、處理運算，並與記憶體/ROM互動
+    CPU(inM=memOut, 
+        instruction=instruction, 
+        reset=reset, 
+        outM=outM, 
+        writeM=writeM, 
+        addressM=addressM, 
+        pc=pc);
+
+    // 3. 資料記憶體（包含 RAM、Screen 與 Keyboard）
+    Memory(in=outM, 
+           load=writeM, 
+           address=addressM, 
+           out=memOut);
 }

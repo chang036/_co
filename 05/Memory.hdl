@@ -28,4 +28,39 @@ CHIP Memory {
 
     PARTS:
     // Put your code here:
+   // -------------------------------------------------------------------------
+    // 1. 寫入控制 (Load Routing)
+    // -------------------------------------------------------------------------
+    // address[14] 為 0 代表 RAM16K；為 1 代表 Screen 或 Keyboard
+    // address[13] 用來區分 Screen (0) 還是 Keyboard (1，雖然 Keyboard 是唯讀的，不用寫入)
+    Not(in=address[14], out=isRAM);
+    And(a=address[14], b=address[13], out=isKeyboard); // 0x6000 的區段
+    Not(in=address[13], out=notAddress13);
+    And(a=address[14], b=notAddress13, out=isScreen);  // 0x4000-0x5FFF 的區段
+
+    // 只有當 load == 1 且目標是 RAM 或 Screen 時，才允許寫入
+    And(a=load, b=isRAM, out=loadRAM);
+    And(a=load, b=isScreen, out=loadScreen);
+
+    // -------------------------------------------------------------------------
+    // 2. 記憶體元件例化 (Memory Components)
+    // -------------------------------------------------------------------------
+    // 16K RAM (位址用 0..13)
+    RAM16K(in=in, load=loadRAM, address=address[0..13], out=ramOut);
+
+    // 8K Screen (位址用 0..12)
+    Screen(in=in, load=loadScreen, address=address[0..12], out=screenOut);
+
+    // Keyboard 晶片 (不需要 load，直接讀取)
+    Keyboard(out=keyboardOut);
+
+    // -------------------------------------------------------------------------
+    // 3. 讀取輸出多工器 (Output Muxing)
+    // -------------------------------------------------------------------------
+    // 根據 address[14] 與 address[13] 決定要輸出哪一個元件的值
+    // 如果 address[14] == 0，輸出 RAM
+    // 如果 address[14] == 1 且 address[13] == 0，輸出 Screen
+    // 如果 address[14] == 1 且 address[13] == 1，輸出 Keyboard
+    Mux16(a=screenOut, b=keyboardOut, sel=address[13], out=screenOrKeyboardOut);
+    Mux16(a=ramOut, b=screenOrKeyboardOut, sel=address[14], out=out);
 }

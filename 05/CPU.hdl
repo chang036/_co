@@ -40,4 +40,92 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+    // -------------------------------------------------------------------------
+    // 1. 指令解碼 (Instruction Decoding)
+    // -------------------------------------------------------------------------
+    // 判斷是 A 指令 (instruction[15] == 0) 還是 C 指令 (instruction[15] == 1)
+    Not(in=instruction[15], out=isAInstruction);
+    Not(in=isAInstruction, out=isCInstruction);
+
+    // C 指令中，如果 d1 也就是 instruction[5] 為 1，代表要將 ALU 的輸出寫入 A 暫存器
+    And(a=isCInstruction, b=instruction[5], out=ALUToA);
+    
+    // A 暫存器的輸入選擇：如果是 A 指令，直接使用指令本身；如果是 C 指令且 ALUToA 為 1，則使用 ALU 的輸出
+    Mux16(a=instruction, b=aluOut, sel=ALUToA, out=aRegIn);
+
+    // A 暫存器的 load 訊號：如果是 A 指令，或者 C 指令指定要寫入 A 暫存器 (ALUToA)
+    Or(a=isAInstruction, b=ALUToA, out=loadA);
+    ARegister(in=aRegIn, load=loadA, out=aOut, out[0..14]=addressM);
+
+
+    // -------------------------------------------------------------------------
+    // 2. ALU 的第二個輸入選擇 (A 暫存器 vs 外部記憶體 M)
+    // -------------------------------------------------------------------------
+    // 在 C 指令中，a bit (instruction[12]) 決定 ALU 的輸入是 A 暫存器還是 inM
+    And(a=isCInstruction, b=instruction[12], out=useM);
+    Mux16(a=aOut, b=inM, sel=useM, out=aluAOrM);
+
+
+    // -------------------------------------------------------------------------
+    // 3. D 暫存器 (D Register)
+    // -------------------------------------------------------------------------
+    // C 指令中，d2 也就是 instruction[4] 為 1 時，將 ALU 輸出寫入 D 暫存器
+    And(a=isCInstruction, b=instruction[4], out=loadD);
+    DRegister(in=aluOut, load=loadD, out=dOut);
+
+
+    // -------------------------------------------------------------------------
+    // 4. ALU 運算單元 (ALU)
+    // -------------------------------------------------------------------------
+    // C 指令的 c1~c6 分別對應 instruction[6] 到 instruction[11]
+    ALU(x=dOut, 
+        y=aluAOrM, 
+        zx=instruction[11], 
+        nx=instruction[10], 
+        zy=instruction[9], 
+        ny=instruction[8], 
+        f=instruction[7], 
+        no=instruction[6], 
+        out=aluOut, 
+        out=outM, 
+        zr=zr, 
+        ng=ng);
+
+
+    // -------------------------------------------------------------------------
+    // 5. 輸出控制與寫入記憶體 (writeM)
+    // -------------------------------------------------------------------------
+    // C 指令中，d3 也就是 instruction[3] 為 1 時，代表要寫入外部記憶體 M
+    And(a=isCInstruction, b=instruction[3], out=writeM);
+
+
+    // -------------------------------------------------------------------------
+    // 6. 程式計數器與跳躍邏輯 (PC & Jump Logic)
+    // -------------------------------------------------------------------------
+    // 判斷 ALU 輸出的正負與零狀態，對應 jump 條件 (j1, j2, j3 = instruction[2], [1], [0])
+    Not(in=zr, out=notZr);
+    Not(in=ng, out=notNg);
+
+    // j1 (instruction[2]): 如果 out < 0 則跳躍 (lt)
+    And(a=ng, b=instruction[2], out=jumpLT);
+    
+    // j2 (instruction[1]): 如果 out == 0 則跳躍 (eq)
+    And(a=zr, b=instruction[1], out=jumpEQ);
+    
+    // j3 (instruction[0]): 如果 out > 0 則跳躍 (gt) -> 也就是 notNg 且 notZr
+    And(a=notNg, b=notZr, out=positive);
+    And(a=positive, b=instruction[0], out=jumpGT);
+
+    // 綜合各種跳躍條件
+    Or(a=jumpLT, b=jumpEQ, out=jumpLE);
+    Or(a=jumpLE, b=jumpGT, out=jumpUnconditional); // 其實就是涵蓋了所有條件組合，只要與 isCInstruction 做 And
+
+    // 只有在 C 指令且符合跳躍條件時，PC 才載入 A 暫存器的值進行 jump
+    And(a=isCInstruction, b=jumpUnconditional, out=pcLoad);
+    
+    // 如果不跳躍，PC 就要自動遞增 (+1)
+    Not(in=pcLoad, out=pcInc);
+
+    // PC 晶片內建了 reset, load, inc 參數
+    PC(in=aOut, load=pcLoad, inc=pcInc, reset=reset, out[0..14]=pc);
 }
