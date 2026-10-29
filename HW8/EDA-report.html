@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IC 設計的 EDA 是什麼？｜實作報告</title>
+<style>
+  :root{
+    --ink:#14202e;
+    --muted:#5d6b7c;
+    --line:#dbe3ec;
+    --paper:#ffffff;
+    --soft:#f4f7fa;
+    --navy:#0e2a47;
+    --navy2:#173f66;
+    --teal:#0f766e;
+    --teal-soft:#e6f4f1;
+    --amber:#b45309;
+    --amber-soft:#fdf3e3;
+    --red:#b42318;
+    --red-soft:#fdf0ee;
+    --blue:#1d4ed8;
+    --blue-soft:#eef4ff;
+    --shadow:0 10px 30px rgba(14,42,71,.08);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:#e9eef4;color:var(--ink);
+    font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",system-ui,-apple-system,"Segoe UI",sans-serif;
+    line-height:1.78;font-size:16px;
+  }
+  .page{max-width:1120px;margin:0 auto;background:var(--paper);box-shadow:var(--shadow)}
+  .cover{
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(45,212,191,.28), transparent 60%),
+      radial-gradient(700px 400px at -10% 110%, rgba(59,130,246,.25), transparent 55%),
+      linear-gradient(135deg,#081a2e 0%,#0e2a47 55%,#123b5e 100%);
+    color:#fff;padding:72px 64px 54px;position:relative;overflow:hidden;
+  }
+  .cover:after{
+    content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;
+    border:1px solid rgba(255,255,255,.18);
+    box-shadow:0 0 0 60px rgba(255,255,255,.04),0 0 0 120px rgba(255,255,255,.025);
+  }
+  .kicker{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:#8ee7d8;font-weight:700}
+  .cover h1{font-size:clamp(38px,5.4vw,62px);line-height:1.12;margin:18px 0 14px;letter-spacing:-.02em}
+  .cover h1 em{font-style:normal;color:#8ee7d8}
+  .cover .sub{font-size:19px;color:#cfe0f0;max-width:760px;margin:0 0 32px}
+  .cover .meta{font-size:14px;color:#9fb6cc;border-top:1px solid rgba(255,255,255,.16);padding-top:18px;display:flex;gap:22px;flex-wrap:wrap}
+  .cover .meta b{color:#fff;font-weight:600}
+  .headline-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px;position:relative;z-index:2}
+  .headline{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:16px 16px 14px;backdrop-filter:blur(4px)}
+  .headline .n{font-size:24px;font-weight:800;color:#fff;line-height:1.15}
+  .headline .l{font-size:12px;color:#b9cde0;margin-top:5px;line-height:1.45}
+  main{padding:56px 64px 72px}
+  .toc{background:var(--soft);border:1px solid var(--line);border-radius:16px;padding:26px 30px;margin-bottom:44px}
+  .toc h2{font-size:15px;margin:0 0 14px;letter-spacing:.12em;color:var(--muted);font-weight:700;border:0;padding:0}
+  .toc ol{margin:0;padding:0;list-style:none;columns:2;column-gap:44px}
+  .toc li{margin:7px 0;break-inside:avoid}
+  .toc a{color:var(--ink);text-decoration:none;border-bottom:1px solid transparent}
+  .toc a:hover{color:var(--teal);border-bottom-color:var(--teal)}
+  .toc .no{display:inline-block;width:26px;color:var(--teal);font-weight:800;font-variant-numeric:tabular-nums}
+  .chapter{margin:0 0 64px;scroll-margin-top:24px}
+  h2{font-size:29px;line-height:1.3;margin:0 0 18px;padding-bottom:12px;border-bottom:2px solid var(--line);letter-spacing:-.01em}
+  h2 .num{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:11px;background:var(--navy);color:#fff;font-size:18px;margin-right:12px;vertical-align:2px;font-variant-numeric:tabular-nums}
+  h3{font-size:21px;margin:34px 0 12px;color:var(--navy2);letter-spacing:-.01em}
+  h4{font-size:17px;margin:24px 0 8px;color:var(--ink)}
+  p{margin:0 0 14px}
+  a{color:var(--blue);text-decoration:none;border-bottom:1px solid rgba(29,78,216,.28)}
+  a:hover{border-bottom-color:var(--blue)}
+  strong{font-weight:700}
+  .lead{font-size:18px;color:#314255;margin-bottom:22px}
+  .small{font-size:13.5px;color:var(--muted)}
+  .tiny{font-size:12.5px;color:var(--muted);line-height:1.6}
+  ul,ol{margin:0 0 16px;padding-left:1.35em}
+  li{margin:7px 0}
+  li::marker{color:var(--teal)}
+  .callout{border-radius:14px;padding:20px 22px;margin:22px 0;border:1px solid var(--line);background:var(--soft)}
+  .callout .tag{display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:.12em;margin-bottom:8px}
+  .callout p:last-child{margin-bottom:0}
+  .callout.key{background:var(--teal-soft);border-color:#bfe3dc}
+  .callout.key .tag{color:var(--teal)}
+  .callout.warn{background:var(--amber-soft);border-color:#f1d3a6}
+  .callout.warn .tag{color:var(--amber)}
+  .callout.fail{background:var(--red-soft);border-color:#f2c7c1}
+  .callout.fail .tag{color:var(--red)}
+  .callout.info{background:var(--blue-soft);border-color:#cddcfb}
+  .callout.info .tag{color:var(--blue)}
+  .quote{border-left:4px solid var(--red);background:#fff;border-radius:0 12px 12px 0;padding:14px 18px;margin:16px 0;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13.5px;color:#7a271a;overflow:auto}
+  table{width:100%;border-collapse:collapse;margin:18px 0 8px;font-size:14.5px}
+  th,td{border:1px solid var(--line);padding:10px 12px;vertical-align:top;text-align:left}
+  th{background:#eef3f8;color:var(--navy);font-weight:700;white-space:nowrap}
+  tbody tr:nth-child(even){background:#fafcfd}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .table-note{font-size:12.5px;color:var(--muted);margin:6px 0 22px}
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:20px 0}
+  .card{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:#fff}
+  .card h4{margin:0 0 6px;font-size:16px;color:var(--navy)}
+  .card p{margin:0;font-size:14px;color:#44556a}
+  .card .icon{font-size:22px;margin-bottom:6px}
+  .metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+  .metric{border:1px solid var(--line);border-radius:14px;padding:16px;background:linear-gradient(180deg,#fff,#f8fbfd)}
+  .metric .v{font-size:25px;font-weight:800;color:var(--navy);line-height:1.1;font-variant-numeric:tabular-nums}
+  .metric .v small{font-size:13px;font-weight:600;color:var(--muted)}
+  .metric .k{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+  .flow{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:24px;margin:20px 0}
+  .flow-title{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--muted);margin:0 0 14px}
+  .flow-row{display:flex;align-items:stretch;gap:6px;flex-wrap:nowrap}
+  .fbox{flex:1;min-width:0;background:#fff;border:1px solid #c9d7e5;border-radius:10px;padding:10px 10px;text-align:center;box-shadow:0 2px 0 rgba(14,42,71,.04)}
+  .fbox .t{font-size:13px;font-weight:800;color:var(--navy);line-height:1.35}
+  .fbox .d{font-size:11px;color:var(--muted);line-height:1.35;margin-top:3px}
+  .fbox.front{border-top:3px solid var(--navy)}
+  .fbox.fpga{border-top:3px solid var(--teal);background:#f3fbf9}
+  .fbox.asic{border-top:3px solid var(--amber);background:#fffaf1}
+  .fbox.out{border-top:3px solid var(--blue);background:#f5f9ff}
+  .farrow{display:flex;align-items:center;color:#8aa0b5;font-size:17px;font-weight:700;flex:0 0 14px;justify-content:center}
+  .branch{margin:16px 0 0;border-left:3px solid var(--teal);padding:2px 0 2px 14px}
+  .branch.asic{border-left-color:var(--amber);margin-top:12px}
+  .branch .bt{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:7px}
+  .branch .bt span{font-weight:500;color:var(--muted);font-size:12px}
+  .verify-band{margin-top:16px;background:var(--navy);color:#dbe9f5;border-radius:12px;padding:12px 16px;font-size:12.5px;line-height:1.6}
+  .verify-band b{color:#8ee7d8}
+  .chart{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .chart h4{margin:0 0 14px;font-size:15px;color:var(--navy)}
+  .bar-row{display:flex;align-items:center;gap:10px;margin:10px 0}
+  .bar-label{width:58px;font-size:13px;font-weight:700;color:var(--muted);flex:0 0 58px}
+  .bar-track{flex:1;height:20px;background:#edf2f7;border-radius:6px;overflow:hidden}
+  .bar{height:100%;border-radius:6px;min-width:3px}
+  .bar.fpga{background:linear-gradient(90deg,#0f766e,#2dd4bf)}
+  .bar.asic{background:linear-gradient(90deg,#b45309,#f59e0b)}
+  .bar-val{width:92px;text-align:right;font-size:13px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;flex:0 0 92px}
+  .chart-note{font-size:12px;color:var(--muted);margin-top:10px}
+  .chart-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0}
+  pre{background:#0b1b2b;color:#d7e5f2;border-radius:12px;padding:18px 20px;overflow:auto;font-size:13px;line-height:1.65;margin:14px 0 8px;border:1px solid #16344f}
+  code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+  p code,li code,td code{background:#eef3f8;border:1px solid #dbe3ec;border-radius:5px;padding:1px 5px;font-size:.88em;color:#0e3a5c}
+  .code-caption{font-size:12px;color:var(--muted);margin:-2px 0 18px}
+  .kv{display:grid;grid-template-columns:150px 1fr;gap:8px 16px;font-size:14px;margin:14px 0}
+  .kv dt{color:var(--muted);font-weight:600}
+  .kv dd{margin:0}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+  .pill.ok{background:#e5f6ec;color:#0b6b3a;border:1px solid #b9e6c8}
+  .pill.warn{background:#fff3df;color:#92400e;border:1px solid #f0d2a0}
+  .pill.fail{background:#fdecea;color:#991b1b;border:1px solid #f2c1bb}
+  .led{display:inline-flex;gap:6px;margin:6px 0 2px}
+  .led i{width:26px;height:26px;border-radius:50%;border:1px solid #c7d5e3;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;font-weight:800}
+  .led i.on{background:radial-gradient(circle at 35% 30%,#fff6b0,#f59e0b 55%,#b45309);color:#4a2500;border-color:#b45309;box-shadow:0 0 14px rgba(245,158,11,.55)}
+  .led i.off{background:#e8eef4;color:#8da0b2}
+  .refs{font-size:14px}
+  .refs li{margin:10px 0}
+  .refs .u{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12.5px;color:var(--muted);word-break:break-all}
+  .footer{border-top:1px solid var(--line);padding-top:18px;margin-top:20px;color:var(--muted);font-size:12.5px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .toc a,.refs a{word-break:break-word}
+  @media (max-width:860px){
+    .cover{padding:48px 26px 38px}
+    main{padding:36px 24px 54px}
+    .headline-grid,.metric-grid{grid-template-columns:repeat(2,1fr)}
+    .cards,.chart-grid{grid-template-columns:1fr}
+    .flow-row{flex-wrap:wrap}
+    .fbox{flex:1 1 30%}
+    .farrow{display:none}
+    .toc ol{columns:1}
+  }
+  @media print{
+    body{background:#fff;font-size:11.5pt}
+    .page{box-shadow:none;max-width:none}
+    .cover{page-break-after:always;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+    main{padding:0}
+    .chapter{page-break-inside:auto}
+    h2{page-break-after:avoid}
+    h3{page-break-after:avoid}
+    table,.callout,.metric,.chart,.flow,.card{page-break-inside:avoid}
+    a{color:inherit;border:0}
+    .toc{page-break-after:always}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ================= COVER ================= -->
+<header class="cover">
+  <div class="kicker">實作報告 · 數位 IC 設計 · EDA</div>
+  <h1>IC 設計的 <em>EDA</em> 是什麼？</h1>
+  <p class="sub">從一個 FIFO、一個 16 位元加法器，到一顆 RISC-V SoC：用實際操作走過模擬、驗證、合成、佈局、繞線、時序與位元流，理解 EDA 如何把「想法」變成「可製造的電路」。</p>
+  <div class="meta">
+    <span>操作日期：<b>2026-10-29</b></span>
+    <span>工具：<b>veryl2chip IDE</b>、<b>hack-computer HDL</b></span>
+    <span>執行環境：<b>瀏覽器 / WebAssembly</b></span>
+  </div>
+  <div class="headline-grid">
+    <div class="headline"><div class="n">4 / 4</div><div class="l">FIFO 的 RTL、通用閘、iCE40、標準元件四種實作，測試結果一致</div></div>
+    <div class="headline"><div class="n">48.3 → 493.9</div><div class="l">同一設計的 FPGA 與 ASIC Fmax（MHz），相差 10.2 倍</div></div>
+    <div class="headline"><div class="n">25.9 → 0.70</div><div class="l">每週期能量（pJ），ASIC 約為 FPGA 的 1/37</div></div>
+    <div class="headline"><div class="n">1227 LC</div><div class="l">RISC-V SoC 位元流實際佔用的邏輯單元，Fmax 17 MHz</div></div>
+  </div>
+</header>
+
+<main>
+
+<!-- ================= TOC ================= -->
+<nav class="toc" aria-label="目錄">
+  <h2>目錄</h2>
+  <ol>
+    <li><a href="#s1"><span class="no">1</span>EDA 是什麼：一句話與一個比喻</a></li>
+    <li><a href="#s2"><span class="no">2</span>為什麼 IC 設計離不開 EDA</a></li>
+    <li><a href="#s3"><span class="no">3</span>IC 設計流程與 EDA 工具鏈</a></li>
+    <li><a href="#s4"><span class="no">4</span>本次使用的軟體與操作環境</a></li>
+    <li><a href="#s5"><span class="no">5</span>實作一：FIFO 256×8 的完整流程</a></li>
+    <li><a href="#s6"><span class="no">6</span>實作二：Inc16 與迷你 EDA</a></li>
+    <li><a href="#s7"><span class="no">7</span>實作三：RISC-V CPU 與「放不下」</a></li>
+    <li><a href="#s8"><span class="no">8</span>從操作看 EDA 的五個價值</a></li>
+    <li><a href="#s9"><span class="no">9</span>EDA 的產業版圖與發展趨勢</a></li>
+    <li><a href="#s10"><span class="no">10</span>與 Cornell ECE 5745 課程的對照</a></li>
+    <li><a href="#s11"><span class="no">11</span>結論</a></li>
+    <li><a href="#appendix"><span class="no">A</span>附錄：重現步驟、量測總表、名詞</a></li>
+  </ol>
+</nav>
+
+<!-- ================= 1 ================= -->
+<section class="chapter" id="s1">
+  <h2><span class="num">1</span>EDA 是什麼：一句話與一個比喻</h2>
+
+  <p class="lead"><strong>EDA（Electronic Design Automation，電子設計自動化）</strong>是用來設計、驗證、實現與分析晶片（及電路板）的一套軟體工具與方法學。對數位 IC 而言，它最重要的任務，是讓人類寫下的硬體描述（RTL），經過一連串自動化步驟，變成兩種最終產物之一：<strong>FPGA 的位元流（bitstream）</strong>，或 <strong>ASIC 的 GDSII 版圖</strong>。</p>
+
+  <div class="callout key">
+    <div class="tag">一句話定義</div>
+    <p>EDA 是硬體的<strong>編譯器</strong>、<strong>測試框架</strong>、<strong>排版軟體</strong>與<strong>量測儀器</strong>的總和：它把「我想要什麼功能」翻譯成「哪一顆閘放在哪裡、用哪一層金屬連起來」，並在做出來之前告訴你「這樣會不會太慢、太熱、太大、放不下」。</p>
+  </div>
+
+  <p>很多人第一次接觸 EDA，會以為它只是「畫電路圖的軟體」或「模擬器」。但真正商用 IC 設計的 EDA 是一條<strong>工具鏈</strong>，每一站都會改變設計的表示法（representation），也每一站都會加入新的物理限制：</p>
+
+  <table>
+    <thead><tr><th style="width:24%">軟體開發的類比</th><th style="width:28%">IC / FPGA 的對應</th><th>轉換了什麼</th></tr></thead>
+    <tbody>
+      <tr><td>原始碼</td><td>RTL（Veryl / Verilog / VHDL）</td><td>人的意圖 → 可被工具解析的時序邏輯描述</td></tr>
+      <tr><td>編譯器</td><td>邏輯合成（logic synthesis）</td><td>RTL → 與製程無關的閘級網表（AND / OR / DFF…）</td></tr>
+      <tr><td>單元測試</td><td>testbench、assertion、形式驗證</td><td>用測試與數學證明檢查功能是否正確</td></tr>
+      <tr><td>連結器與最佳化</td><td>技術映射（technology mapping）</td><td>通用閘 → LUT4、標準元件、BRAM / SRAM</td></tr>
+      <tr><td>排版引擎</td><td>佈局與繞線（placement &amp; routing）</td><td>邏輯連接 → 晶片上的實際座標與金屬線</td></tr>
+      <tr><td>效能分析器</td><td>STA、功耗、IR drop、DRC / LVS</td><td>「能不能跑」、「會不會燒」、「能不能做」</td></tr>
+      <tr><td>執行檔</td><td>位元流 / GDSII</td><td>可載入 FPGA，或可送進晶圓廠製造</td></tr>
+    </tbody>
+  </table>
+
+  <p>這個比喻有一個關鍵差異：<strong>軟體編譯失敗可以重編，晶片做錯通常不能重來。</strong> 一組先進製程光罩動輒數百萬到數千萬美元，一次改版就是幾個月的時間。因此 EDA 不只是「讓設計變快」，更是「讓錯誤在便宜的時候就被抓到」。</p>
+</section>
+
+<!-- ================= 2 ================= -->
+<section class="chapter" id="s2">
+  <h2><span class="num">2</span>為什麼 IC 設計離不開 EDA</h2>
+
+  <p>一顆現代處理器有數百億個電晶體，連線的數量與彼此的時序關係，早已超出人腦可以逐一手算的範圍。EDA 之所以不可取代，可以從四個壓力來看。</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="icon">▦</div>
+      <h4>規模：數量級問題</h4>
+      <p>一個 256×8 的 FIFO，用通用閘描述就已是 <strong>8,660 個元件</strong>；一顆 RV32I 核心合成後是 <strong>9,151 個閘、5,337 個 LUT4、1,056 個 DFF</strong>。這種規模只能靠工具做階層展開、化簡與對應。</p>
+    </div>
+    <div class="card">
+      <div class="icon">$</div>
+      <h4>成本：錯誤很貴</h4>
+      <p>FPGA 燒錯可以重燒；ASIC 光罩做錯，損失的是整套光罩與數個月產能。EDA 的驗證與簽核（signoff）流程，本質上是在<strong>把錯誤提前</strong>。</p>
+    </div>
+    <div class="card">
+      <div class="icon">⚙</div>
+      <h4>物理：互相拉扯的约束</h4>
+      <p>速度、功耗、面積、良率不是獨立的。把元件排緊可以縮短線長，卻可能造成壅塞與 IR drop；提高時脈可以變快，卻可能讓功耗與時序餘裕惡化。</p>
+    </div>
+    <div class="card">
+      <div class="icon">◈</div>
+      <h4>設計空間：同一份 RTL，多種實現</h4>
+      <p>同一份 FIFO 可以放進 FPGA（1 個 BRAM、60 個 LUT4），也可以做成 ASIC（166 個標準元件、1 個 SRAM）。哪個才對？要靠 EDA 把<strong>PPA（Performance / Power / Area）</strong>量出來再選。</p>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <div class="tag">PPA 是什麼</div>
+    <p><strong>Performance</strong>（效能，常用 Fmax 或關鍵路徑延遲表示）、<strong>Power</strong>（功耗／每週期能量）、<strong>Area</strong>（面積）。這三個字幾乎是所有 IC 設計取捨的共同語言；EDA 的工作，就是讓這三個數字在每個階段都「看得見」。</p>
+  </div>
+
+  <p>還有一個常被忽略的作用：<strong>EDA 是團隊協作的共同語言</strong>。前端工程師交付 RTL 與 testbench，後端工程師交付佈局、時序與 DRC 報告，製程廠交付 PDK 與標準元件庫；大家靠同一套格式（Verilog、LEF/DEF、SDC、GDSII、SPEF…）溝通。沒有 EDA，這些角色無法交接。</p>
+</section>
+
+<!-- ================= 3 ================= -->
+<section class="chapter" id="s3">
+  <h2><span class="num">3</span>IC 設計流程與 EDA 工具鏈</h2>
+
+  <p>下圖把數位 IC 的典型流程拆成「前端（front-end）」與「後端（back-end）」，並標出 FPGA 與 ASIC 在合成之後的分岔。本報告實際操作的 veryl2chip，就是把這張圖做成可以點選的七個（FPGA）與九個（ASIC）階段。</p>
+
+  <div class="flow" aria-label="IC 設計流程圖">
+    <div class="flow-title">共用前端：把規格變成閘級網表</div>
+    <div class="flow-row">
+      <div class="fbox front"><div class="t">規格 / 架構</div><div class="d">功能、效能、介面</div></div>
+      <div class="farrow">→</div>
+      <div class="fbox front"><div class="t">RTL 設計</div><div class="d">Veryl / Verilog / VHDL</div></div>
+      <div class="farrow">→</div>
+      <div class="fbox front"><div class="t">功能模擬</div><div class="d">testbench、assertion、波形</div></div>
+      <div class="farrow">→</div>
+      <div class="fbox front"><div class="t">邏輯合成</div><div class="d">化簡、階層展開</div></div>
+      <div class="farrow">→</div>
+      <div class="fbox front"><div class="t">通用閘網表</div><div class="d">AND / OR / XOR / DFF</div></div>
+    </div>
+
+    <div class="branch">
+      <div class="bt">FPGA 分支 <span>— 可重複燒錄，沒有光罩成本</span></div>
+      <div class="flow-row">
+        <div class="fbox fpga"><div class="t">技術映射</div><div class="d">LUT4 / DFF / BRAM</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox fpga"><div class="t">佈局</div><div class="d">Placement</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox fpga"><div class="t">繞線</div><div class="d">Routing</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox fpga"><div class="t">時序分析</div><div class="d">STA、Fmax</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox out"><div class="t">位元流</div><div class="d">.bin → 開發板</div></div>
+      </div>
+    </div>
+
+    <div class="branch asic">
+      <div class="bt">ASIC 分支 <span>— 固定功能，需要光罩與晶圓廠</span></div>
+      <div class="flow-row">
+        <div class="fbox asic"><div class="t">標準元件映射</div><div class="d">NAND2 / INV / DFF…</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox asic"><div class="t">佈局 + CTS</div><div class="d">Row placement、時脈樹</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox asic"><div class="t">繞線</div><div class="d">Global + detail</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox asic"><div class="t">簽核</div><div class="d">STA、功耗、DRC / LVS</div></div>
+        <div class="farrow">→</div>
+        <div class="fbox out"><div class="t">GDSII</div><div class="d">光罩 → 晶圓 → 封裝</div></div>
+      </div>
+    </div>
+
+    <div class="verify-band"><b>驗證與分析貫穿全程：</b>testbench · assertion · coverage · 形式等價 · 閘級模擬 · STA · 功耗 / IR drop · DRC / LVS。每一站都在回答同一件事：「這個設計真的能做出來，而且做出來會對嗎？」</div>
+  </div>
+
+  <h3>3.1 前端與後端</h3>
+  <p><strong>前端</strong>關心「邏輯對不對」：RTL 撰寫、功能模擬、邏輯合成、形式驗證。輸出的是一份與製程無關（technology-independent）的閘級網表。<strong>後端</strong>關心「物理上做不做得到」：把閘對應到真正的標準元件或 FPGA 資源，安排位置、拉線、插入時脈樹，最後做時序、功耗、DRC / LVS 簽核。</p>
+
+  <p>兩者之間不是單向的。後端發現「這條路徑太慢」時，會回頭要求前端改微架構（多加一級 pipeline、拆開組合邏輯），或要求合成工具換一種映射策略。這種來回，就是 EDA 工具與設計者共同進行的<strong>設計空間探索</strong>。</p>
+
+  <h3>3.2 FPGA 與 ASIC 的差異</h3>
+  <table>
+    <thead><tr><th style="width:18%">面向</th><th style="width:41%">FPGA</th><th>ASIC</th></tr></thead>
+    <tbody>
+      <tr><td>實作方式</td><td>可程式化的 LUT、正反器、BRAM、DSP</td><td>固定功能的標準元件與 SRAM 巨集，經光罩製造</td></tr>
+      <tr><td>製造成本</td><td>無光罩成本（NRE 低），晶片本身較貴</td><td>光罩與設計 NRE 極高，量大時單位成本低</td></tr>
+      <tr><td>效能 / 功耗</td><td>較低 Fmax、較高功耗（可程式開關與繞線多）</td><td>較高 Fmax、較低功耗，可做精細的時脈與電源規劃</td></tr>
+      <tr><td>彈性</td><td>可重複燒錄、現場更新</td><td>製造後功能固定，改版等於重新流片</td></tr>
+      <tr><td>典型流程</td><td>合成 → 技術映射 → 佈局 → 繞線 → 位元流</td><td>合成 → DFT → 佈局 → CTS → 繞線 → 簽核 → GDSII</td></tr>
+      <tr><td>適合</td><td>原型、驗證、少量多樣、教學</td><td>大量生產、效能 / 功耗 / 面積敏感的產品</td></tr>
+    </tbody>
+  </table>
+
+  <p>本報告的 FIFO 正好把這個差異量化出來：同一個 RTL、同一組測試，FPGA 版本 Fmax 48.3 MHz、每週期 25.9 pJ；ASIC 版本 Fmax 493.9 MHz、每週期 0.70 pJ。但 ASIC 需要光罩與固定的標準元件庫，FPGA 則可以立刻重燒。這就是 EDA 幫人做的第一種取捨。</p>
+</section>
+
+<!-- ================= 4 ================= -->
+<section class="chapter" id="s4">
+  <h2><span class="num">4</span>本次使用的軟體與操作環境</h2>
+
+  <p>為了不讓報告停留在名詞解釋，我在 2026-10-29 實際使用了兩套瀏覽器版 EDA 環境。所有數字都是操作後從介面讀下來的，不是引用別人的截圖；重現步驟放在附錄 A。</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="icon">▣</div>
+      <h4>veryl2chip IDE（主要）</h4>
+      <p>核心以 Rust 撰寫、編譯成 WebAssembly 的完整數位 EDA：Veryl HDL 編輯器、事件驅動模擬器、邏輯合成、iCE40 / ECP5 FPGA 流程、ASIC 標準元件流程（含 SKY130）、STA、功耗、虛擬 iCEBreaker。介面支援繁體中文。</p>
+      <p class="tiny" style="margin-top:8px">開啟位置：<a href="https://ccc-eda.github.io/veryl2chip/web/dist/index.html">ccc-eda.github.io/veryl2chip/web/dist/index.html</a></p>
+    </div>
+    <div class="card">
+      <div class="icon">▤</div>
+      <h4>hack-computer HDL（對照）</h4>
+      <p>JavaScript 版 Nand2Tetris 工具鏈。HDL 模擬器可載入章節晶片、跑 <code>.tst</code>、檢視階層電路圖，並內建一個迷你 EDA：MicroSyn + MicroPnR，示範 FPGA / ASIC 的七個階段與退火佈局。</p>
+      <p class="tiny" style="margin-top:8px">開啟位置：<a href="https://ccc-js.github.io/hack-computer/dist/hdl.html">ccc-js.github.io/hack-computer/dist/hdl.html</a></p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="tag">操作環境</div>
+    <p>Windows 11＋Chromium 架構瀏覽器（OpenCode 內嵌，Chrome 152 / Electron 44）。兩套工具都不需要安裝、不需要伺服器；veryl2chip 的模擬器、合成器、佈局繞線器全部以 WebAssembly 在工作執行緒中執行。實際操作包含：按「▶ 測試」、按「✔ 全面驗證」、切換七／九個合成階段、按「⚡ 虛擬板」燒錄，以及讀取狀態列與右側細節面板的數字。</p>
+  </div>
+
+  <h3>4.1 為什麼選這兩套，而不是直接開商用工具？</h3>
+  <p>商用 ASIC EDA（Synopsys、Cadence、Siemens EDA）需要授權、PDK 與大量環境設定，通常只在學校或公司內部使用；它們的強項是「簽核級」的準確度與完整流程。相對地，veryl2chip 與 hack-computer 把<strong>整條流程攤開在瀏覽器裡</strong>，每個階段都能點進去看閘、LUT 真值表、標準元件、繞線與時序，非常適合理解「EDA 到底在做什麼」。兩者的定位不同：一個是產業的簽核工具，一個是透明可觀察的教學／研究工具。</p>
+
+  <p>Cornell ECE 5745 的課程講義則提供了另一個參照：它用 Synopsys / Cadence 教前端與後端，也講合成演算法（Topic 12）與實體設計演算法（Topic 13），並帶學生跑 OpenLANE 開源流程。這正好補上「商用工具怎麼用」與「工具背後演算法是什麼」兩塊。</p>
+</section>
+
+<!-- ================= 5 ================= -->
+<section class="chapter" id="s5">
+  <h2><span class="num">5</span>實作一：FIFO 256×8 的完整流程</h2>
+
+  <p>第一個設計是 256×8 的同步 FIFO，資料在 <code>i_pop</code> 的下一拍出現，記憶體以同步讀取推斷成 block RAM。這個設計不大，卻包含了數位 IC 最典型的三件事：<strong>狀態（讀寫指標）、記憶體（RAM）、控制（full / empty）</strong>，很適合走完整條流程。</p>
+
+  <h3>5.1 設計與 testbench</h3>
+  <p>FIFO 的核心邏輯如下（節錄自 veryl2chip 範例 <code>fifo.veryl</code>）：</p>
+  <pre><code>module Fifo #(
+    param ADDR_W: u32 = 8,
+    param DATA_W: u32 = 8,
+) (
+    i_clk  : input  clock        ,
+    i_rst  : input  reset        ,
+    i_push : input  logic        ,
+    i_data : input  logic&lt;DATA_W&gt;,
+    i_pop  : input  logic        ,
+    o_data : output logic&lt;DATA_W&gt;,
+    o_empty: output logic        ,
+    o_full : output logic        ,
+    o_count: output logic&lt;ADDR_W + 1&gt;,
+) {
+    var mem  : logic&lt;DATA_W&gt; [1 &lt;&lt; ADDR_W];
+    var wp   : logic&lt;ADDR_W&gt;;
+    var rp   : logic&lt;ADDR_W&gt;;
+    var count: logic&lt;ADDR_W + 1&gt;;
+    var rdata: logic&lt;DATA_W&gt;;
+
+    let do_push: logic = i_push &amp;&amp; (count != (1 &lt;&lt; ADDR_W));
+    let do_pop : logic = i_pop  &amp;&amp; (count != 0);
+
+    always_ff (i_clk) {
+        if do_push { mem[wp] = i_data; }
+        if do_pop  { rdata   = mem[rp]; }
+    }
+
+    always_ff {
+        if_reset { wp = 0; rp = 0; count = 0; }
+        else {
+            if do_push { wp = wp + 1; }
+            if do_pop  { rp = rp + 1; }
+            if do_push &amp;&amp; !do_pop      { count = count + 1; }
+            else if do_pop &amp;&amp; !do_push { count = count - 1; }
+        }
+    }
+
+    assign o_data  = rdata;
+    assign o_count = count;
+    assign o_empty = count == 0;
+    assign o_full  = count == (1 &lt;&lt; ADDR_W);
+}</code></pre>
+  <p class="code-caption">Veryl 用 <code>always_ff</code> 表示時序邏輯、<code>if_reset</code> 統一處理重設；<code>=</code> 在 <code>always_ff</code> 內代表「下一拍生效」，等於 Verilog 的 <code>&lt;=</code>。</p>
+
+  <p>testbench <code>TestFifo</code> 依序檢查：重設後為空、push 三個位元組、依序 pop 出 <code>0x11 / 0x22 / 0x33</code>、清空後再填滿 256 筆、滿了之後不能再 push。這些 <code>$assert</code> 就是 EDA 模擬階段最早、也最便宜的把關。</p>
+
+  <h3>5.2 功能模擬：0.07 秒的第一次把關</h3>
+  <div class="metric-grid">
+    <div class="metric"><div class="v">1</div><div class="k">testbench 通過</div></div>
+    <div class="metric"><div class="v">0.07 <small>s</small></div><div class="k">模擬時間（WebAssembly 背景執行緒）</div></div>
+    <div class="metric"><div class="v">281 <small>ms</small></div><div class="k">引擎啟動 / 編譯時間</div></div>
+    <div class="metric"><div class="v">0 / 0</div><div class="k">錯誤 / 警告</div></div>
+  </div>
+  <p>結果顯示 <span class="pill ok">TestFifo ✓ PASS</span>，結束原因為 <code>$finish</code>。這個階段只證明「RTL 的行為符合 testbench」，還沒有證明「合成後也一樣」，更沒有證明「放得進晶片、跑得到目標頻率」。</p>
+
+  <h3>5.3 全面驗證：四種實作，同一個答案</h3>
+  <p>veryl2chip 的「✔ 全面驗證」會把同一個 testbench 跑在四種實作上：原始 RTL、通用閘網表、iCE40 元件網表、ASIC 標準元件網表。這是對合成工具最直接的不信任測試：<strong>如果合成器有 bug，四份結果就會不一致。</strong></p>
+
+  <table>
+    <thead><tr><th>實作</th><th>規模（介面顯示）</th><th>TestFifo</th><th>意義</th></tr></thead>
+    <tbody>
+      <tr><td>RTL（Veryl）</td><td>1 個 FIFO 模組</td><td><span class="pill ok">✓ PASS</span></td><td>行為基準</td></tr>
+      <tr><td>通用閘（generic gates）</td><td>8,660 個元件</td><td><span class="pill ok">✓ PASS</span></td><td>合成後仍是同一個邏輯</td></tr>
+      <tr><td>iCE40（LUT4 / DFF / BRAM）</td><td>86 個元件</td><td><span class="pill ok">✓ PASS</span></td><td>對應到 FPGA 資源後仍正確</td></tr>
+      <tr><td>ASIC 標準元件</td><td>151 個元件</td><td><span class="pill ok">✓ PASS</span></td><td>對應到標準元件庫後仍正確</td></tr>
+    </tbody>
+  </table>
+  <p class="table-note">量測位置：veryl2chip「測試結果」面板的驗證矩陣；耗時 6.3 秒。註：驗證矩陣的標準元件計數（151）與 ASIC 合成視圖的 166 個標準元件來自不同視圖，計數方式可能含記憶體／邊界元件，本文照實呈現，不強行視為同一數字。</p>
+
+  <div class="callout key">
+    <div class="tag">為什麼 8,660 個閘會變成 86 個 iCE40 元件？</div>
+    <p>因為「閘」和「FPGA 元件」不是同一種東西。通用閘網表把 256×8 的記憶體拆成大量正反器與多工器；iCE40 映射時，整塊記憶體被收進 <strong>1 個 SB_RAM40_4K</strong>，其餘控制邏輯才用 LUT4 與 DFF 實現。<strong>元件數不能跨技術直接比較</strong>，必須在同一個製程／元件庫裡看 PPA。</p>
+  </div>
+
+  <h3>5.4 FPGA 實現：60 個 LUT4、1 個 BRAM</h3>
+  <p>切到「FPGA → ⑤ Placement 退火」，工具完成技術映射、佈局與繞線，狀態列顯示：</p>
+  <div class="metric-grid">
+    <div class="metric"><div class="v">60</div><div class="k">LUT4（4 輸入查表）</div></div>
+    <div class="metric"><div class="v">25</div><div class="k">DFF（正反器）</div></div>
+    <div class="metric"><div class="v">48.3 <small>MHz</small></div><div class="k">Fmax（關鍵路徑 20.70 ns）</div></div>
+    <div class="metric"><div class="v">1.2 <small>%</small></div><div class="k">iCE40UP5K 的 5,280 LC 中使用 61 LC</div></div>
+  </div>
+  <p>右側細節面板同時給出：1 個 <code>SB_RAM40_4K</code>、632 個可程式繞線開關（pip）、25.9 pJ/週期、在 48.3 MHz 下約 1.340 mW（靜態 0.090 mW）。FPGA 的面積是「固定晶片」，設計只佔 61 個 LC，所以真正的成本是「這顆 FPGA 多少錢」，而不是「這 61 個 LC 多少面積」。</p>
+
+  <h3>5.5 ASIC 實現：166 個標準元件、493.9 MHz</h3>
+  <p>切到「ASIC · vlib → ⑨ Power + IR Drop」，同一份 RTL 被映射到自製的 vlib 標準元件庫（約 130 nm 等級的教學模型），再經過列式佈局、時脈樹、繞線、STA 與功耗分析：</p>
+  <div class="metric-grid">
+    <div class="metric"><div class="v">166</div><div class="k">標準元件（含 25 個 DFF）</div></div>
+    <div class="metric"><div class="v">493.9 <small>MHz</small></div><div class="k">Fmax（關鍵路徑 2.02 ns）</div></div>
+    <div class="metric"><div class="v">7,828 <small>µm²</small></div><div class="k">元件面積；晶粒 98×96 µm，利用率 82%</div></div>
+    <div class="metric"><div class="v">0.70 <small>pJ</small></div><div class="k">每週期能量（@ 48.3 MHz 比較基準）</div></div>
+  </div>
+  <p>繞線結果是 7.39 mm 金屬線、1,804 個 via；在 48.3 MHz 下功耗約 0.0341 mW（漏電 0.0003 mW）。ASIC 的「面積」才是真正的矽面積，所以 7,828 µm² 這個數字會直接影響每顆晶片的成本。</p>
+
+  <h4>能量花在哪裡？</h4>
+  <p>ASIC 的每週期能量分解（畫面數值，總和約 0.70 pJ）很值得注意：</p>
+  <table>
+    <thead><tr><th>來源</th><th class="num">每週期能量</th><th class="num">占比</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td>訊號 net</td><td class="num">0.282 pJ</td><td class="num">40.3%</td><td>元件之間的金屬線充放電</td></tr>
+      <tr><td>時脈樹</td><td class="num">0.258 pJ</td><td class="num">36.9%</td><td>時脈要驅動所有正反器</td></tr>
+      <tr><td>元件內部</td><td class="num">0.149 pJ</td><td class="num">21.3%</td><td>閘本身的切換</td></tr>
+      <tr><td>SRAM</td><td class="num">0.010 pJ</td><td class="num">1.4%</td><td>記憶體存取</td></tr>
+    </tbody>
+  </table>
+  <p class="table-note">0.282 + 0.258 + 0.149 + 0.010 = 0.699 pJ，與顯示的 0.70 pJ 相符。這說明在深次微米設計裡，<strong>「線」與「時脈」往往比「閘」更耗能</strong>；這也是為什麼後端工程師要花大量時間做 placement、CTS 與繞線最佳化。</p>
+
+  <h3>5.6 FPGA vs ASIC：把取捨變成數字</h3>
+  <table>
+    <thead><tr><th style="width:20%">指標</th><th style="width:40%">FPGA（iCE40UP5K）</th><th>ASIC（vlib 標準元件）</th></tr></thead>
+    <tbody>
+      <tr><td>實作</td><td>LUT4 + DFF + BRAM（可重燒）</td><td>標準元件 + SRAM 巨集（需流片）</td></tr>
+      <tr><td>邏輯資源</td><td>61 LC（1.2%）、25 DFF、0 CARRY</td><td>166 個元件、25 DFF</td></tr>
+      <tr><td>記憶體</td><td>1 × SB_RAM40_4K</td><td>1 × SRAM 巨集</td></tr>
+      <tr><td>面積</td><td>固定晶片（5,280 LC / 30 BRAM）</td><td>元件 7,828 µm²；晶粒 98×96 µm；利用率 82%</td></tr>
+      <tr><td>繞線</td><td>632 個 pip（可程式開關）</td><td>7.39 mm 金屬線、1,804 個 via</td></tr>
+      <tr><td>關鍵路徑</td><td>20.70 ns</td><td>2.02 ns</td></tr>
+      <tr><td>Fmax</td><td>48.3 MHz</td><td>493.9 MHz（×10.2）</td></tr>
+      <tr><td>每週期能量</td><td>25.9 pJ</td><td>0.70 pJ（÷37）</td></tr>
+      <tr><td>功耗 @ 48.3 MHz</td><td>1.340 mW（靜態 0.090）</td><td>0.0341 mW（漏電 0.0003）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="chart-grid">
+    <div class="chart">
+      <h4>Fmax（MHz，越高越好）</h4>
+      <div class="bar-row"><span class="bar-label">FPGA</span><div class="bar-track"><div class="bar fpga" style="width:9.8%"></div></div><span class="bar-val">48.3</span></div>
+      <div class="bar-row"><span class="bar-label">ASIC</span><div class="bar-track"><div class="bar asic" style="width:98.8%"></div></div><span class="bar-val">493.9</span></div>
+      <div class="chart-note">同一 RTL、同一測試；ASIC 快 10.2 倍。</div>
+    </div>
+    <div class="chart">
+      <h4>每週期能量（pJ，越低越好）</h4>
+      <div class="bar-row"><span class="bar-label">FPGA</span><div class="bar-track"><div class="bar fpga" style="width:100%"></div></div><span class="bar-val">25.9</span></div>
+      <div class="bar-row"><span class="bar-label">ASIC</span><div class="bar-track"><div class="bar asic" style="width:2.7%"></div></div><span class="bar-val">0.70</span></div>
+      <div class="chart-note">ASIC 約為 FPGA 的 1/37；可程式繞線與較大的開關電容是主因。</div>
+    </div>
+    <div class="chart">
+      <h4>功耗 @ 48.3 MHz（mW，越低越好）</h4>
+      <div class="bar-row"><span class="bar-label">FPGA</span><div class="bar-track"><div class="bar fpga" style="width:100%"></div></div><span class="bar-val">1.340</span></div>
+      <div class="bar-row"><span class="bar-label">ASIC</span><div class="bar-track"><div class="bar asic" style="width:2.5%"></div></div><span class="bar-val">0.0341</span></div>
+      <div class="chart-note">以兩者較低的 Fmax（48.3 MHz）為共同頻率，翻轉率來自同一組隨機輸入。</div>
+    </div>
+  </div>
+  <p class="table-note">資料來源：veryl2chip「⇄ FPGA vs ASIC 比較」頁面；測試日期 2026-10-29。ASIC 使用 vlib 教學用標準元件庫，數字是此流程模型的估計，不是商業 signoff 或實際晶片量測。</p>
+
+  <h3>5.7 這一輪學到什麼</h3>
+  <p>同一份 125 行的 FIFO，在四個抽象層級都通過同一個 testbench，卻有完全不同的成本結構：通用閘 8,660 個元件、FPGA 86 個元件（1 個 BRAM）、ASIC 166 個元件（1 個 SRAM）。<strong>EDA 的價值不是「把電路畫出來」，而是讓這些差異可以被量測、被比較、被選擇。</strong> 如果沒有合成與佈局繞線，設計者只知道「邏輯對」，不知道「這樣做值不值得」。這正是 EDA 從「輔助繪圖」升級為「設計方法」的關鍵。</p>
+</section>
+
+<!-- ================= 6 ================= -->
+<section class="chapter" id="s6">
+  <h2><span class="num">6</span>實作二：Inc16 與迷你 EDA</h2>
+
+  <p>第二個設計回到 Nand2Tetris 的教學語境：用 <code>hdl.html</code> 模擬一個 16 位元遞增器 <code>Inc16</code>，再按「合成 LUT」看它如何被映射到 FPGA 與 ASIC。這個例子小到可以完全看懂，正好用來拆解「合成」到底做了什麼。</p>
+
+  <h3>6.1 HDL 模擬與階層電路圖</h3>
+  <p><code>Inc16</code> 的 HDL 只有一行真正的工作：把 <code>Add16</code> 的第一個加數接 <code>in</code>，第二個加數的第 0 位接 <code>true</code>、其餘接 <code>false</code>。</p>
+  <pre><code>CHIP Inc16 {
+    IN in[16];
+    OUT out[16];
+
+    PARTS:
+    Add16(a=in, b[0]=true, b[1..15]=false, out=out);
+}</code></pre>
+  <p>按「執行」後，<code>.tst</code> 的輸出表全部符合 <code>.cmp</code>，顯示 <span class="pill ok">✓ 通過</span>：</p>
+  <table>
+    <thead><tr><th>in（二進位）</th><th>out（二進位）</th><th>十進位意義</th></tr></thead>
+    <tbody>
+      <tr><td><code>0000 0000 0000 0000</code></td><td><code>0000 0000 0000 0001</code></td><td>0 → 1</td></tr>
+      <tr><td><code>1111 1111 1111 1111</code></td><td><code>0000 0000 0000 0000</code></td><td>65535 → 0（溢位）</td></tr>
+      <tr><td><code>0000 0000 0000 0101</code></td><td><code>0000 0000 0000 0110</code></td><td>5 → 6</td></tr>
+      <tr><td><code>1111 1111 1111 1011</code></td><td><code>1111 1111 1111 1100</code></td><td>65531 → 65532</td></tr>
+    </tbody>
+  </table>
+  <p>按「檢視電路圖」可以看到階層：<code>Inc16</code> 內含一個 <code>Add16</code>，<code>b[0]</code> 綁 <code>true</code>、<code>b[1..15]</code> 綁 <code>false</code>。這張圖可以一路點進 <code>Add16</code>、<code>FullAdder</code>，直到最底層的 <code>Nand</code> 與 <code>DFF</code>。<strong>「階層」是硬體設計控制複雜度的第一個工具</strong>：你不需要一次看到 224 個閘，只需要看到一顆 <code>Add16</code>。</p>
+
+  <h3>6.2 迷你 EDA：224 個閘 → 60 個 LUT4</h3>
+  <p>按「合成 LUT」後，畫面顯示七個階段：① RTL→Logic、② Logic Netlist、③ Tech-indep Syn、④ LUT4 Techmap、⑤ Placement、⑥ Routing、⑦ STA，並可切換 FPGA / ASIC 後端。這次的結果：</p>
+
+  <div class="metric-grid">
+    <div class="metric"><div class="v">60</div><div class="k">LUT4（FPGA 技術映射後）</div></div>
+    <div class="metric"><div class="v">0</div><div class="k">DFF（純組合邏輯）</div></div>
+    <div class="metric"><div class="v">23.0 <small>MHz</small></div><div class="k">Fmax（關鍵路徑 43.50 ns）</div></div>
+    <div class="metric"><div class="v">10×10</div><div class="k">佈局格子；利用率 0.60</div></div>
+  </div>
+  <p>其他數字：I/O Pad 32 個、總線長 78（畫面單位）、原始閘數 224。若切到 ASIC 視圖，同一份設計變成 <strong>174 個標準元件</strong>（NAND2×65、AOI21×16、INV×78、MUX2×15），面積 319.2 µm²、66 列、線長 1,705.3 µm、Fmax 約 81 MHz。</p>
+
+  <table>
+    <thead><tr><th>階段</th><th>FPGA 視圖</th><th>ASIC 視圖</th><th>在做什麼</th></tr></thead>
+    <tbody>
+      <tr><td>① RTL→Logic</td><td>展開 <code>Inc16</code> → <code>Add16</code> → 全加器</td><td>同左</td><td>解析 HDL、建階層、攤平實例</td></tr>
+      <tr><td>② Logic Netlist</td><td>224 個閘</td><td>224 個閘</td><td>每個行為變成 AND / XOR / NOT / DFF</td></tr>
+      <tr><td>③ Tech-indep Syn</td><td>化簡、常數傳播</td><td>同左</td><td>去掉重複與沒用到的邏輯</td></tr>
+      <tr><td>④ 技術映射</td><td>60 個 LUT4 + 0 DFF</td><td>174 個標準元件</td><td>對應到真正的製程元件</td></tr>
+      <tr><td>⑤ 佈局</td><td>10×10 格子、利用率 0.60</td><td>66 列</td><td>決定元件位置，縮短連線</td></tr>
+      <tr><td>⑥ 繞線</td><td>總線長 78</td><td>線長 1,705.3 µm</td><td>用可程式開關或金屬層連接</td></tr>
+      <tr><td>⑦ 時序</td><td>43.50 ns → 23.0 MHz</td><td>約 81 MHz</td><td>找關鍵路徑，算 Fmax</td></tr>
+    </tbody>
+  </table>
+  <p class="table-note">資料來源：hack-computer <code>hdl.html</code> 的「合成 LUT」浮層，2026-10-29。此為教學用的簡化模型（MicroSyn / MicroPnR），數字用於理解流程，不應與商用 signoff 直接比較。</p>
+
+  <div class="callout warn">
+    <div class="tag">為什麼 LUT4 的數量不是「224 ÷ 4」？</div>
+    <p>因為一個 LUT4 不是「4 個閘」，而是<strong>一張 16 位元的真值表</strong>：任何 4 個輸入的布林函數都可以用它實現。合成器會把邏輯切成 4 輸入的切集（cut），再把每個切集的真值表燒進 LUT。因此 224 個閘可能變成 60 個 LUT4，也可能更多或更少，取決於電路結構與化簡。ASIC 則沒有 LUT，必須用 NAND2、INV、AOI21 等標準元件重新組出同樣的函數，所以又是另一組數字。</p>
+  </div>
+
+  <h3>6.3 這個例子的意義</h3>
+  <p><code>Inc16</code> 只是一個 16 位元加一，卻已經完整展示了 EDA 的核心迴圈：<strong>描述（HDL）→ 模擬（.tst）→ 合成（閘）→ 映射（LUT / 標準元件）→ 佈局繞線（座標）→ 時序（Fmax）</strong>。對初學者來說，這比直接看一顆 CPU 更容易建立心智模型；對有經驗的設計者來說，它提醒你：每一個階段都可能改變數字，但<strong>行為必須保持一致</strong>。</p>
+</section>
+
+<!-- ================= 7 ================= -->
+<section class="chapter" id="s7">
+  <h2><span class="num">7</span>實作三：RISC-V CPU 與「放不下」</h2>
+
+  <p>第三個設計把規模拉大：veryl2chip 內建的單週期 RV32I 核心 <code>RiscvCore</code>，以及加上程式 ROM、資料 RAM、LED 的 <code>RiscvSoc</code>。這一輪最重要的收穫不是「跑得多快」，而是<strong>EDA 如何在編譯期就告訴你「這顆晶片放不下」</strong>。</p>
+
+  <h3>7.1 單週期 RV32I：功能對，但放不進 FPGA</h3>
+  <p>選擇「RV32I 單週期 CPU」範例，直接跳到 FPGA 的 ⑤ Placement。合成結果是 <strong>9,175 → 9,151 個閘、5,337 個 LUT4、1,056 個 DFF</strong>；接著佈局繞線回報：</p>
+  <div class="quote">佈局繞線失敗：design does not fit: needs 5441 LCs (the device has 5280) and 167 IO pins (the package has 39)</div>
+  <p>iCE40UP5K-SG48 只有 5,280 個 LC、39 個 I/O 腳。這個核心的暫存器檔用正反器實現，再加上單週期 CPU 的資料路徑，結果<strong>超出 161 個 LC，且 I/O 需求遠超封裝腳數</strong>。工具沒有把錯誤留到燒錄或上電才發生，而是在佈局階段就明確拒絕，並建議改用「RISC-V SoC（FPGA）」範例或 ASIC 流程。</p>
+
+  <div class="callout fail">
+    <div class="tag">這一幕就是 EDA 的價值</div>
+    <p>「放不下」不是設計者的疏忽，而是<strong>架構與資源的衝突</strong>。EDA 把這個衝突量化成兩個數字（5,441 &gt; 5,280、167 &gt; 39），讓設計者可以在<strong>改架構</strong>（多週期、把暫存器／記憶體放進 BRAM）、<strong>換晶片</strong>（更大的 FPGA）、或<strong>改流程</strong>（走 ASIC）之間做選擇。如果沒有這一關，這些數字要等到板子回來才會變成除錯成本。</p>
+  </div>
+
+  <h3>7.2 RISC-V SoC：把記憶體放進 BRAM 就放得下</h3>
+  <p>改用 multi-cycle 的 <code>RiscvSoc</code>：暫存器檔與記憶體改用同步讀取的 RAM，推斷成 block RAM；程式 ROM 也放在 BRAM。結果大幅收斂：</p>
+  <div class="metric-grid">
+    <div class="metric"><div class="v">2,463</div><div class="k">合成後閘數（原始 11,969）</div></div>
+    <div class="metric"><div class="v">1,164</div><div class="k">LUT4</div></div>
+    <div class="metric"><div class="v">232</div><div class="k">DFF</div></div>
+    <div class="metric"><div class="v">17.0 <small>MHz</small></div><div class="k">Fmax（板子時脈 12 MHz，有餘裕）</div></div>
+  </div>
+  <p>兩個 testbench 都通過：<code>TestRiscvCore</code> 與 <code>TestRiscvSoc</code>，各以 <code>$finish</code> 結束，總計 0.19 秒。按「⚡ 虛擬板」後，工具合成、佈局繞線、產生位元流並燒錄，回報：</p>
+  <div class="quote" style="border-left-color:#0f766e;color:#0f5132;background:#f3fbf9">RiscvSoc　位元流：1227 LC，Fmax 17.0 MHz ≥ 12 MHz ✓<br>接線：CLK↔i_clk　BTN_N↔i_rst　P1A1↔o_led[0] … P1A10↔o_led[7]</div>
+
+  <p>虛擬板上的 8 顆 LED 最後顯示為 <strong>1 1 1 0 1 1 0 0</strong>（LED0→LED7），也就是二進位 <code>0011 0111</code> = <code>0x37</code> = <strong>55</strong>，正好是測試程式計算的 Fibonacci(10)。</p>
+  <div class="led" aria-label="虛擬板 LED 顯示 55">
+    <i class="on">0</i><i class="on">1</i><i class="on">2</i><i class="off">3</i><i class="on">4</i><i class="on">5</i><i class="off">6</i><i class="off">7</i>
+  </div>
+  <p class="tiny">LED0 是最低位元。由左至右為 LED0..LED7：1,1,1,0,1,1,0,0 → 0b00110111 = 55。</p>
+
+  <h3>7.3 從「放不下」到「跑起來」：架構決策被 EDA 推動</h3>
+  <p>這一輪完整展示了 EDA 如何參與<strong>架構決策</strong>，而不只是被動實現：</p>
+  <ul>
+    <li><strong>單週期 → 多週期</strong>：減少每個時脈的組合邏輯與資料路徑，換取較低的資源與較高的 Fmax 餘裕。</li>
+    <li><strong>暫存器 → BRAM</strong>：把 32×32 的暫存器檔與記憶體放進 block RAM，LUT4 用量從 5,337 降到 1,164。</li>
+    <li><strong>程式 ROM 常數化</strong>：合成器把只被這個程式用到的硬體移除（未用的暫存器、移位器、byte load 等），所以 SoC 的閘數遠小於完整核心。</li>
+    <li><strong>位元流驗證</strong>：Fmax 17.0 MHz ≥ 12 MHz，才敢說「這顆設計可以在這塊板子上跑」。</li>
+  </ul>
+  <p>這也解釋了為什麼 IC 設計不是「寫完 RTL 就結束」：<strong>RTL 只是提案，EDA 才是把提案變成可執行承諾的過程。</strong></p>
+</section>
+
+<!-- ================= 8 ================= -->
+<section class="chapter" id="s8">
+  <h2><span class="num">8</span>從操作看 EDA 的五個價值</h2>
+
+  <p>把三次操作放在一起看，EDA 的價值可以歸納成五點。每一點都對應到本報告量到的具體數字。</p>
+
+  <h3>8.1 正確性：四種實作，一個答案</h3>
+  <p>FIFO 的「全面驗證」把同一個 testbench 跑在 RTL、通用閘、iCE40、標準元件四種實作上，結果 4/4 一致。這個矩陣的意義是：<strong>合成器也是軟體，也會有 bug</strong>；用同一組測試去驗證合成前後，是最實際的交叉檢查。更嚴謹的流程還會做形式等價檢查（formal equivalence），用數學證明兩份網表在所有輸入下行為相同。</p>
+
+  <h3>8.2 可實現性：在編譯期就說「放不下」</h3>
+  <p>RV32I 單週期核心需要 5,441 LC，但 iCE40UP5K 只有 5,280 LC；需要 167 個 I/O，但封裝只有 39 腳。EDA 在佈局階段就給出明確的失敗訊息，還附上建議。這種「早期失敗」比「晚期失敗」便宜幾個數量級：在 FPGA 上，它只損失幾分鐘；在 ASIC 上，它可能避免一次數百萬美元的光罩錯誤。</p>
+
+  <h3>8.3 量化：把 PPA 取捨變成表格</h3>
+  <p>FIFO 的 FPGA 與 ASIC 比較，把「哪個比較好」拆成 9 個指標：邏輯資源、記憶體、面積、繞線、關鍵路徑、Fmax、每週期能量、功耗。沒有 EDA，這些只能靠猜；有了 EDA，設計者可以說「我需要 48 MHz、低功耗、可重燒，所以選 FPGA」或「我要 500 MHz、量產一億顆，所以走 ASIC」。<strong>工程決策的前提是可比較的數字。</strong></p>
+
+  <h3>8.4 生產力：瀏覽器裡的分鐘級迭代</h3>
+  <p>這次的迭代速度：FIFO 模擬 0.07 秒、四種實作全面驗證 6.3 秒、RISC-V SoC 的佈局繞線約 40 秒、虛擬板燒錄與開機在分鐘內完成。這些數字在 20 年前需要工作站與授權排隊，現在只要一個瀏覽器分頁。WebAssembly 與開源工具鏈把 EDA 的<strong>入門門檻</strong>降到「打開網址就能用」，這對教學、原型與小團隊特別重要。</p>
+
+  <h3>8.5 透明性：每一個階段都可以點進去看</h3>
+  <p>veryl2chip 與 hack-computer 都把中間結果畫出來：LUT 的真值表、標準元件的位置、繞線的 net、關鍵路徑的每一段延遲、退火佈局的過程。商用工具當然也能產生報告，但通常藏在指令與 log 裡；教學工具把「黑盒子」打開，讓學習者看見<strong>演算法如何改變結果</strong>。例如 Inc16 的 224 個閘變成 60 個 LUT4，或 FIFO 的 8,660 個通用閘變成 86 個 iCE40 元件，這些「數量級跳躍」只有在中間階段才看得懂。</p>
+
+  <div class="callout warn">
+    <div class="tag">也要知道限制</div>
+    <p>本報告的 ASIC 數字來自 vlib 教學模型（veryl2chip 另支援 SKY130 開放 PDK），不是商業 signoff；hack-computer 的 MicroSyn / MicroPnR 也是簡化版。真實 tapeout 需要 foundry 的 PDK、Liberty / SPEF / SDC、商用 STA 與 DRC / LVS 工具，以及 silicon validation。把這些數字當成「理解流程與趨勢」的工具，而不是「可以直接下線」的保證。</p>
+  </div>
+</section>
+
+<!-- ================= 9 ================= -->
+<section class="chapter" id="s9">
+  <h2><span class="num">9</span>EDA 的產業版圖與發展趨勢</h2>
+
+  <h3>9.1 商用與開源</h3>
+  <table>
+    <thead><tr><th style="width:20%">類別</th><th style="width:40%">代表工具 / 公司</th><th>角色</th></tr></thead>
+    <tbody>
+      <tr><td>商用三大 EDA</td><td>Synopsys、Cadence、Siemens EDA（原 Mentor）</td><td>前端合成、模擬、形式驗證、後端佈局繞線、STA、DFT、PCB / 封裝</td></tr>
+      <tr><td>物理分析 / 多物理</td><td>Ansys、Keysight、Silvaco</td><td>熱、電磁、電源完整性、TCAD、元件模擬</td></tr>
+      <tr><td>開源前端</td><td>Verilator、Icarus Verilog、Yosys、ghdl</td><td>模擬、合成、形式 / 等價檢查</td></tr>
+      <tr><td>開源後端</td><td>nextpnr、OpenROAD、OpenLANE、Magic、KLayout</td><td>FPGA / ASIC 佈局繞線、DRC / LVS、GDSII</td></tr>
+      <tr><td>開源 PDK</td><td>SkyWater SKY130、GF180MCU</td><td>讓學界與小團隊也能跑完整 ASIC 流程</td></tr>
+      <tr><td>瀏覽器 / 教學</td><td>veryl2chip、hack-computer、Wokwi（部分）</td><td>免安裝、視覺化、適合課程與原型</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.2 四個明顯趨勢</h3>
+  <div class="cards">
+    <div class="card">
+      <h4>① 雲端與瀏覽器化</h4>
+      <p>把模擬器、合成器、佈局繞線器編譯成 WebAssembly，讓 EDA 從「工作站授權」變成「開網址就能跑」。veryl2chip 就是這個方向的極端例子：整條流程在前端執行，沒有伺服器。</p>
+    </div>
+    <div class="card">
+      <h4>② 開源流程成熟</h4>
+      <p>Yosys + nextpnr + OpenROAD + SKY130 已經可以做出可運作的晶片；Cornell ECE 5745 也把 OpenLANE 放進課程。開源不是要取代商用 signoff，而是降低學習與原型門檻。</p>
+    </div>
+    <div class="card">
+      <h4>③ AI 輔助設計</h4>
+      <p>機器學習被用在佈局預測、繞線壅塞預測、設計空間探索、測試生成與驗證覆蓋率。大型語言模型也開始協助產生 RTL 與 testbench，但<strong>驗證與簽核仍然是人與工具的責任</strong>。</p>
+    </div>
+    <div class="card">
+      <h4>④ Chiplet 與先進封裝</h4>
+      <p>當單晶片越來越難做，設計拆成多顆 chiplet，EDA 要處理 die-to-die 介面、封裝繞線、熱與電源整合。流程從「一顆晶片」變成「一個系統」。</p>
+    </div>
+  </div>
+
+  <h3>9.3 對台灣的意義</h3>
+  <p>台灣是全球晶圓代工與 IC 設計的重鎮，EDA 是這個生態系的「共同語言」：設計公司用 EDA 把產品做出來，晶圓廠用 EDA / PDK 確保設計可以製造，封裝測試也需要對應的工具鏈。對學習者而言，理解 EDA 不只是會操作一套軟體，而是理解<strong>從規格、RTL、驗證、佈局到量產的整條價值鏈</strong>；這也是為什麼數位邏輯、計算機組織、VLSI 與 EDA 課程通常會互相搭配。</p>
+</section>
+
+<!-- ================= 10 ================= -->
+<section class="chapter" id="s10">
+  <h2><span class="num">10</span>與 Cornell ECE 5745 課程的對照</h2>
+
+  <p>Cornell 的 <strong>ECE 5745: Complex Digital ASIC Design</strong> 是理解「產業級 EDA 怎麼教」的好參照。課程講義把主題拆成 HDL、CMOS 元件與電路、全客戶設計、自動化方法、ASIC 與 custom 的差距、封裝／電源／時脈／I/O、測試與驗證、合成演算法、實體設計演算法等；實作則包含前端、後端、自動化流程、TinyRV2 加速器、SRAM 產生器與 OpenLANE 流程。</p>
+
+  <table>
+    <thead><tr><th style="width:32%">ECE 5745 的主題</th><th style="width:34%">本報告的對應操作</th><th>補充說明</th></tr></thead>
+    <tbody>
+      <tr><td>Topic 1：Hardware Description Languages</td><td>Veryl / Nand2Tetris HDL 撰寫與模擬</td><td>RTL 是設計的「原始碼」，語意與時序必須精確</td></tr>
+      <tr><td>Topic 5：Automated Design Methodologies</td><td>FIFO / Inc16 / RISC-V SoC 的合成與實現</td><td>自動化把設計者從手繪閘級電路中解放</td></tr>
+      <tr><td>Topic 8：Testing and Verification</td><td>testbench、<code>$assert</code>、四種實作全面驗證</td><td>驗證不是「跑一次」，而是交叉檢查與覆蓋率</td></tr>
+      <tr><td>Topic 12：Synthesis Algorithms</td><td>224 閘 → 60 LUT4、8,660 閘 → 86 元件</td><td>化簡、切集、技術映射決定最終 PPA</td></tr>
+      <tr><td>Topic 13：Physical Design Automation</td><td>Placement、Routing、CTS、STA、功耗 / IR</td><td>物理限制讓「邏輯對」變成「做出來也對」</td></tr>
+      <tr><td>Section 1–3：Front-end / Back-end / Flow</td><td>veryl2chip 的七／九階段流程</td><td>前端與後端不是先後，而是反覆迭代</td></tr>
+      <tr><td>Tutorial 4：Synopsys / Cadence ASIC Tools</td><td>本報告用開源／教學工具替代</td><td>商用工具做 signoff，教學工具做理解</td></tr>
+    </tbody>
+  </table>
+
+  <p>兩者最大的差異在<strong>準確度與規模</strong>：ECE 5745 用商用工具與真實 PDK，處理的是可以下線的設計；本報告用瀏覽器工具，處理的是可以理解的設計。但兩者要建立的直覺是一樣的：<strong>設計者必須知道每個階段在做什麼、會引入什麼限制、以及如何用數字判斷好壞。</strong> 只會按「合成」按鈕而不懂背後演算法，遇到 timing violation 或壅塞時就無法除錯；只懂演算法而不會操作工具，也無法把設計帶到 tapeout。EDA 的教育價值，正在這兩者的交會處。</p>
+</section>
+
+<!-- ================= 11 ================= -->
+<section class="chapter" id="s11">
+  <h2><span class="num">11</span>結論</h2>
+
+  <p><strong>EDA 是 IC 設計的「實現層」。</strong> 它接收人類寫下的 RTL，經過模擬、合成、映射、佈局、繞線、時序與功耗分析，最後輸出位元流或 GDSII。它不只是畫圖或模擬，而是一套把「功能意圖」轉換成「物理現實」的工具鏈與方法學。</p>
+
+  <p>這次的實作讓我印象最深的是<strong>抽象層級的落差</strong>：一個 256×8 的 FIFO，在通用閘是 8,660 個元件，在 FPGA 是 86 個元件（1 個 BRAM），在 ASIC 是 166 個標準元件（1 個 SRAM）。同一個行為，不同的實現，Fmax 從 48.3 MHz 跳到 493.9 MHz，每週期能量從 25.9 pJ 降到 0.70 pJ。這些數字不是課本上的形容詞，而是按了幾下滑鼠、跑了幾十秒之後，工具根據真實的元件庫與繞線算出來的。</p>
+
+  <p>另一個印象是<strong>失敗的價值</strong>：單週期 RV32I 核心因為 5,441 &gt; 5,280 個 LC、167 &gt; 39 個 I/O 而「放不下」。這個失敗不是挫折，而是 EDA 最有用的功能之一：它讓設計者在花錢之前就知道架構與資源的衝突，然後用多週期、BRAM、換晶片或改流程來解決。最後 RISC-V SoC 以 1,164 個 LUT4、17.0 MHz 的位元流在虛擬板上亮出 LED = 55，完成了從 RTL 到實際運行的閉環。</p>
+
+  <p>所以，<strong>IC 設計的 EDA 是什麼？</strong> 它是把「我想要一顆會算 Fibonacci 的晶片」變成「這顆晶片在 17 MHz 下、用 1,227 個邏輯單元、可以燒進這塊板子」的那一整套工具、資料與方法。沒有它，現代晶片的複雜度無法被管理；有了它，設計者才能在速度、功耗、面積與成本之間，做出有根據的選擇。</p>
+
+  <div class="callout key">
+    <div class="tag">給第一次接觸 EDA 的人</div>
+    <p>不要從「記住所有工具名稱」開始。先從一個小設計（例如 FIFO 或 Inc16）走一次完整流程：寫 RTL → 跑 testbench → 看波形 → 合成 → 看閘／LUT → 佈局繞線 → 看 Fmax。當你看到同一份程式碼變成不同的元件、不同的數字，你就會真正理解 EDA 在做什麼。</p>
+  </div>
+</section>
+
+<!-- ================= APPENDIX ================= -->
+<section class="chapter" id="appendix">
+  <h2><span class="num">A</span>附錄：重現步驟、量測總表、名詞</h2>
+
+  <h3>A.1 重現步驟</h3>
+  <ol>
+    <li><strong>FIFO：</strong>開啟 <a href="https://ccc-eda.github.io/veryl2chip/web/dist/index.html#ex=fifo">veryl2chip IDE（#ex=fifo）</a> → 按「▶ 測試」→ 按「✔ 全面驗證」→ 在「看電路」選 <code>FPGA</code> 與「⑤ Placement 退火」→ 再選 <code>ASIC · vlib</code> 與「⑨ Power + IR Drop」→ 最後選「⇄ FPGA vs ASIC 比較」。</li>
+    <li><strong>Inc16：</strong>開啟 <a href="https://ccc-js.github.io/hack-computer/dist/hdl.html">hack-computer HDL</a> → 章節選「02 加法器/ALU」→ 晶片選 <code>../02/Inc16</code> → 按「執行」→ 按「檢視電路圖」→ 按「合成 LUT」→ 切換 FPGA / ASIC 視圖。</li>
+    <li><strong>RISC-V：</strong>開啟 <a href="https://ccc-eda.github.io/veryl2chip/web/dist/index.html#ex=rv32i&amp;stage=place">RV32I 單週期 CPU（#ex=rv32i&amp;stage=place）</a>，觀察「放不下」訊息；再開 <a href="https://ccc-eda.github.io/veryl2chip/web/dist/index.html#ex=soc&amp;stage=place">RISC-V SoC（#ex=soc&amp;stage=place）</a> → 按「▶ 測試」→ 按「⚡ 虛擬板」→ 看 LED。</li>
+    <li><strong>命令列（可選）：</strong>veryl2chip 也提供 <code>v2c</code>：<code>cargo install veryl2chip-sim veryl2chip-eda</code>，即可用 <code>v2c sim / synth / fpga / asic / gatesim</code> 重跑類似流程。</li>
+  </ol>
+
+  <h3>A.2 量測總表</h3>
+  <table>
+    <thead><tr><th style="width:26%">項目</th><th>數值</th><th style="width:26%">來源 / 備註</th></tr></thead>
+    <tbody>
+      <tr><td>FIFO 模擬</td><td>1 個 testbench PASS，0.07 s，0 錯誤 / 0 警告</td><td>「測試結果」面板</td></tr>
+      <tr><td>FIFO 全面驗證</td><td>1 個 testbench × 4 種實作全部一致，6.3 s</td><td>「✔ 全面驗證」</td></tr>
+      <tr><td>FIFO 通用閘 / iCE40 / 標準元件</td><td>8,660 / 86 / 151 個元件</td><td>驗證矩陣</td></tr>
+      <tr><td>FIFO FPGA</td><td>60 LUT4、25 DFF、61 LC（1.2%）、1 BRAM、632 pips、20.70 ns、48.3 MHz</td><td>FPGA ⑤；狀態列</td></tr>
+      <tr><td>FIFO ASIC</td><td>166 cells、25 DFF、7,828 µm²、98×96 µm、82%、7.39 mm、1,804 via、2.02 ns、493.9 MHz</td><td>ASIC ⑨；比較頁</td></tr>
+      <tr><td>FIFO 能量 / 功耗</td><td>FPGA 25.9 pJ、1.340 mW；ASIC 0.70 pJ、0.0341 mW（@48.3 MHz）</td><td>比較頁</td></tr>
+      <tr><td>Inc16 HDL</td><td>4 組測資全部通過（0→1、65535→0、5→6、65531→65532）</td><td>hack-computer「執行」</td></tr>
+      <tr><td>Inc16 FPGA</td><td>224 閘 → 60 LUT4 + 0 DFF、10×10、util 0.60、32 I/O、43.50 ns、23.0 MHz</td><td>「合成 LUT」FPGA</td></tr>
+      <tr><td>Inc16 ASIC</td><td>174 cells（NAND2 65 / AOI21 16 / INV 78 / MUX2 15）、319.2 µm²、66 列、1,705.3 µm、約 81 MHz</td><td>「合成 LUT」ASIC</td></tr>
+      <tr><td>RV32I 單週期</td><td>9,175→9,151 閘、5,337 LUT4、1,056 DFF；需要 5,441 LC / 167 IO，放不下</td><td>FPGA ⑤ 失敗訊息</td></tr>
+      <tr><td>RISC-V SoC</td><td>11,969→2,463 閘、1,164 LUT4、232 DFF、17.0 MHz；2 個 testbench PASS</td><td>FPGA ⑤；測試結果</td></tr>
+      <tr><td>RISC-V SoC 位元流</td><td>1,227 LC、Fmax 17.0 MHz ≥ 12 MHz；LED = 0b00110111 = 55</td><td>虛擬板</td></tr>
+    </tbody>
+  </table>
+
+  <h3>A.3 名詞對照</h3>
+  <table>
+    <thead><tr><th style="width:22%">名詞</th><th>意思</th></tr></thead>
+    <tbody>
+      <tr><td>RTL</td><td>Register-Transfer Level，暫存器轉移層級；用時脈與暫存器描述電路行為，是合成工具的輸入。</td></tr>
+      <tr><td>Testbench</td><td>用來測試設計的「測試電路」：產生時脈、餵輸入、檢查輸出。</td></tr>
+      <tr><td>Synthesis</td><td>邏輯合成：把 RTL 轉成閘級網表，並做化簡與最佳化。</td></tr>
+      <tr><td>Technology mapping</td><td>技術映射：把通用閘對應到特定製程的 LUT、標準元件或記憶體。</td></tr>
+      <tr><td>Placement / Routing</td><td>佈局／繞線：決定元件位置，再用金屬線或可程式開關連接。</td></tr>
+      <tr><td>CTS</td><td>Clock Tree Synthesis，時脈樹合成：把時脈均勻地送到所有正反器，控制 skew。</td></tr>
+      <tr><td>STA</td><td>Static Timing Analysis，靜態時序分析：不跑模擬，用延遲模型檢查 setup / hold 是否滿足。</td></tr>
+      <tr><td>PPA</td><td>Performance、Power、Area：效能、功耗、面積，IC 設計的三大取捨。</td></tr>
+      <tr><td>DRC / LVS</td><td>Design Rule Check / Layout Versus Schematic：檢查版圖是否符合製程規則、是否與電路一致。</td></tr>
+      <tr><td>PDK</td><td>Process Design Kit：製程廠提供的設計套件（元件模型、規則、Liberty 等）。</td></tr>
+      <tr><td>DFT / ATPG</td><td>Design for Test / Automatic Test Pattern Generation：讓晶片可被測試，並自動產生測試向量。</td></tr>
+      <tr><td>GDSII</td><td>積體電路版圖的交換格式，是送給晶圓廠的「施工圖」。</td></tr>
+      <tr><td>Bitstream</td><td>FPGA 的設定檔：每個 LUT 的真值表與每個繞線開關的開關狀態。</td></tr>
+      <tr><td>LUT4</td><td>4 輸入查表：16 位元真值表，可實現任意 4 輸入布林函數。</td></tr>
+      <tr><td>DFF</td><td>D 型正反器：時脈邊緣觸發的 1 位元儲存元件。</td></tr>
+      <tr><td>BRAM / SRAM</td><td>FPGA 的塊狀記憶體 / ASIC 的靜態隨機存取記憶體巨集。</td></tr>
+      <tr><td>Tapeout</td><td>送片：把 GDSII 送進晶圓廠製作光罩並生產。</td></tr>
+      <tr><td>NRE</td><td>Non-Recurring Engineering，一次性工程成本（光罩、設計、驗證）。</td></tr>
+    </tbody>
+  </table>
+
+  <h3>A.4 參考資料</h3>
+  <ol class="refs">
+    <li>veryl2chip IDE（線上版）。<span class="u">https://ccc-eda.github.io/veryl2chip/web/dist/index.html</span>（2026-10-29 操作）</li>
+    <li>veryl2chip GitHub：README、tutorial、veryl-eda 文件。<span class="u">https://github.com/ccc-eda/veryl2chip/</span></li>
+    <li>veryl2chip 教學：從零開始用 Veryl 設計數位電路。<span class="u">https://github.com/ccc-eda/veryl2chip/blob/main/tutorial/README.tw.md</span></li>
+    <li>hack-computer HDL 模擬器。<span class="u">https://ccc-js.github.io/hack-computer/dist/hdl.html</span>（2026-10-29 操作）</li>
+    <li>hack-computer GitHub：Nand2Tetris 全工具鏈＋RISC-V 後端。<span class="u">https://github.com/ccc-js/hack-computer</span></li>
+    <li>Cornell ECE 5745: Complex Digital ASIC Design — Handouts。<span class="u">https://www.csl.cornell.edu/courses/ece5745/handouts.html</span></li>
+    <li>Cornell ECE 5745：ASIC Tool Front-End / Back-End / Automated Flow 課程單元。<span class="u">https://cornell-ece5745.github.io/</span></li>
+    <li>Veryl 官方網站。<span class="u">https://veryl-lang.org/</span></li>
+    <li>Yosys / nextpnr / OpenROAD / OpenLANE 開源工具鏈。<span class="u">https://yosyshq.net/yosys/</span>、<span class="u">https://www.openroad.net/</span></li>
+  </ol>
+
+  <div class="footer">
+    <span>IC 設計的 EDA 是什麼？｜實作報告</span>
+    <span>操作日期 2026-10-29 · 數據取自 veryl2chip IDE 與 hack-computer HDL 畫面</span>
+  </div>
+</section>
+
+</main>
+</div>
+</body>
+</html>
